@@ -1,2 +1,3 @@
 # markdown_docs
-To be used with "GitPrint this!" plugin
+This directory will be used to hold my personal documents (no secret stuff!!!) in Markdown format
+to print those with "GitPrint this!" plugin.
