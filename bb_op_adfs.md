@@ -1,5 +1,4 @@
 # BeeldBank op ADFS aansluiten
----
 ## ADFS
 #### Functionele omschrijving
 Bij het opstarten van de FH portal website, moet de gebruiker zich inloggen om naar de dienstpagina
@@ -353,4 +352,3 @@ Overigens is dit het geval op alle pagina's, ook in ACC. Deze fouten zijn dus oe
 Nog **TODO**
 
 ##### Error: Main.aspx wordt geladen i.p.v. OverzichtPartijBeelden.aspx
-
