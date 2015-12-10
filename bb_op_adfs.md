@@ -9,6 +9,8 @@ de dienstenpagina te kunnen gaan. ADFS zorgt er voor dat hij zich maar één kee
 te authenticeren (SSO) en daarmee wordt zijn autorisatie bepaald en vastgesteld voor 
 alle overige pagina's die de gebruiker nodig heeft.
 
+Zie ook als voorbeeld `XEL` solution (`Helper` en `SelfServiceControl`)
+
 Dit zijn de drie mogelijke workflows (scenario's) van het autorisatieproces
 
 ### Externe klant
@@ -38,7 +40,7 @@ Er zijn drie mogelijke workflows (scenario's) van het autorisatieproces
 1. Klant logt op de [FH portal](https://www.floraholland.com/nl/) aan
 2. Hij gaat naar `Mijn FloraHolland` pagina en kiest voor bijv. `Start webdiensten | Beeldbank voor kwekers`
 3. `AM applicatie` wordt gestart en `Default.aspx.cs` in zijn `SetUser()` methode ontvangt
-   `ApplicationCookie` uit `HttpContext.Current` via
+   `ApplicationCookie`  uit `HttpContext.Current` via
 > `var ac = CookieHelper.GetApplicationCookie();`
 
   `ApplicationCookie` ziet er als volgt uit:  
@@ -52,17 +54,20 @@ public class ApplicationCookie
 }
 ```
 4. Deze cookie heeft in `Web.config` als naam `"fh.userlang"`.
-5. De waarde van `ApplicationUser` wordt `userID`. Voor de externe klant heeft deze waarde
-   een vast formaat als `'fh018503'` of `'vba07248'`.
-6. Vervolgens wordt op basis van de `userID` de `ADFSGebruiker` bepaald via 
-> `ADFSWebGebruiker.FindByUserid(ac.ApplicationUser);`
-
-   In de `ADFSWebGebruiker` zit nu het `klantnummer` en de `klantrolcode` die nodig zijn
-   om te bepalen of deze gebruiker de `Beeldbank` applicatie mag gebruiken.
+5. De waarde van `ApplicationUser` wordt `geselecteerdeUserID`. Deze waarde heeft een vast 
+   formaat als `'fh018503'` of `'vba07248'`.
+6. Op grond van de `geselecteerdeUserID` kan nu bijv. de naam van de klant opgehaald worden
+   uit `ld_lkl` (`ld_ccn_cld_klt` en `ld_ccn_klt`). 
+7. Daarnaast wordt een ADFS claim ontvangen via STS server. In deze claim zitten `klantnummer` en 
+   de `klantrolcode` die nodig zijn om te bepalen of deze gebruiker de `Beeldbank` 
+   applicatie mag gebruiken.
 
 ### FH medewerker
-1. De authorisatieproces voor een FH medewerker is identiek aan dat van een externe klant.
-   Het verschil is dat de `userID` wordt in dit geval het FH login, bijv. `ar` 
+1. De authorisatieprocedure voor een FH medewerker is vrijwel identiek aan die 
+   van de externe klant. De `geselecteerdeUserID` hoortin dit geval bij de geselecteerde klant
+   en niet bij de medewerker zelf.
+2. Echter de ADFS claim bevat in dit geval wel de gegevens over de medewerker zelf 
+   en niet die van de geselecteerde klant.   
 
 ### AO&IA ontwikkelaar
 1. Als je de solution met `F5` of `Ctrl+F5` start, wordt je via een default cookie geautoriseerd.
@@ -81,12 +86,8 @@ We onderscheiden twee Portal rollen:
 
 ### Portal cookies
 Bij het aanloggen op de portal wordt een Portal cookie aangemaakt danwel bijgehouden.
-Daarin staat de gewenste taal voor de portal website vastgelegd.
-
-Methode `Default.aspx.cs -> SetUser()` leest het application cookie:
-```csharp
-Authoriser.Current = ADFSWebGebruiker.FindByUserid(userID);
-```
+Daarin staat de gewenste taal voor de portal website vastgelegd, de loginnaam van de gebruiker
+en nog een paar andere gegevens die voor ons niet interessant zijn.
 
 ### Logins
 - SYS: [`pub_sys2.floraholland.com`](http://pub-sys2.floraholland.com/nl/) met `sy018503/Fl0r@Holland!` (testklant 99999)
@@ -154,8 +155,10 @@ Voorbeeld: `FhNavigator.NavigateTo(FhSession.Startpage);`
 ## Gewenst gedrag
 ---
 
-- bij het opstarten van Beeldbank in ACC de eeste pagina is [OverzichtPartijBeelden.aspx](https://diensten2-acc.floraholland.com/Beeldbank/Tasks/Am/OverzichtPartijBeelden.aspx)
-- bij het opstarten van Beeldbank in LOC de eeste pagina is [Main.aspx](http://localhost:50587/Tasks/Am/Main.aspx)
+- bij het opstarten van Beeldbank in ACC de eeste pagina is 
+  [OverzichtPartijBeelden.aspx](https://diensten2-acc.floraholland.com/Beeldbank/Tasks/Am/OverzichtPartijBeelden.aspx)
+- bij het opstarten van Beeldbank in LOC de eeste pagina is 
+  [Main.aspx](http://localhost:50587/Tasks/Am/Main.aspx)
 
 ### Opstart volgorde in de solution in LOC
 
@@ -192,7 +195,7 @@ Bij het runnen van de solution wordt als eerst deze link in de browser geladen: 
 2. In de uit de HttpContext gelezen cookie zie ik twee keys: **`csrftoken`** en **`FedAuth`**
    Echter geen **`fh.userlang`** die in de `web.config` staat gedefineerd.
    De applicatioCookie blijft daardoor null.
-3. Daardoor kunnen we de userID niet bepalen en wordt de ADFS autorisatie geprobeerd op basis
+3. Daardoor kunnen we de geselecteerdeUserID niet bepalen en wordt de ADFS autorisatie geprobeerd op basis
    van de claims identity in de HttpContext:
 
    `Authoriser.Current = ADFSWebGebruiker.FindByUserid(HttpContext.Current.User.Identity.Name);`
